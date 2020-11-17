@@ -3,15 +3,21 @@ package com.guns.blog.test;
 import java.util.List;
 import java.util.function.Supplier;
 
+import javax.transaction.Transactional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.guns.blog.model.RoleType;
@@ -27,15 +33,54 @@ public class DummyControllerTest {
 	@Autowired
 	private UserRepository userRepository;
 	
+	@DeleteMapping("/dummy/user/{id}")
+	public String deleteUser(@PathVariable int id) {
+		try {
+			userRepository.deleteById(id);
+		} catch (EmptyResultDataAccessException e) {
+			return "삭제에 실패하였습니다. 해당 id는 존재하지 않습니다.";
+		}
+		
+		return "삭제되었습니다. id : " + id;
+	}
+	
+	// save함수는 id를 전달하지 않으면 insert
+	// save함수는 id를 전달하면 update
+	// save함수는 id를 전달하고 없으면 insert
+	// email, password 를 수정한다.
+	@Transactional
+	@PutMapping("/dummy/user/{id}")
+	public User updataeUser(@PathVariable int id, @RequestBody User requestUser) { //json 데이터를 요청 => Java Object(MessageConverter의 Jackson라이브러리가 변환)
+		System.out.println("id : " + id);
+		System.out.println("password : " + requestUser.getPassword());
+		System.out.println("email : " + requestUser.getEmail());
+		
+//		User user = User.builder().username(requestUser.getUsername())
+//					.password(requestUser.getPassword()).email(requestUser.getEmail()).role(requestUser.getRole()).build(); 
+//		
+//		userRepository.save(user);
+		
+		//dirty checking
+		User user = userRepository.findById(id).orElseThrow(()->{
+			return new IllegalArgumentException("수정에 실패하였습니다.");
+		});
+		user.setUsername(requestUser.getUsername());
+		user.setPassword(requestUser.getPassword());
+		user.setEmail(requestUser.getEmail());
+		user.setRole(requestUser.getRole());
+		return user;
+	}
+	
 	@GetMapping("/dummy/user")
-	public List<User> userList(){
+	public List<User> userList() {
 		
 		return userRepository.findAll();
 	}
 	
-	// 한페이지당 2건의 데이터를 리턴밭음
+	//한페이지당 1건의 데이터를 리턴밭음
+	//http://localhost:8000/blog/dummy/page?page=0
 	@GetMapping("/dummy/user/page")
-	public List<User> pageList(@PageableDefault(size = 1, sort = "id", direction = Sort.Direction.DESC) Pageable pageable){
+	public List<User> pageList(@PageableDefault(size = 1, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
 		Page<User> pagingUsers = userRepository.findAll(pageable);
 		
 		if(pagingUsers.isFirst()) {
