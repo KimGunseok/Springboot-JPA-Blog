@@ -27,9 +27,6 @@ import com.guns.blog.repository.UserRepository;
 @RestController
 public class DummyControllerTest {
 	
-	@Value("${spring.data.web.pageable.default-page-size}")
-    private int pageSize;
-	
 	@Autowired
 	private UserRepository userRepository;
 	
@@ -84,7 +81,7 @@ public class DummyControllerTest {
 		Page<User> pagingUsers = userRepository.findAll(pageable);
 		
 		if(pagingUsers.isFirst()) {
-			System.out.println("###Strat Page### pageSize : " + pageSize);
+			System.out.println("###Strat Page###");
 		} else if(pagingUsers.isLast()) {
 			System.out.println("###End Page###");
 		}
